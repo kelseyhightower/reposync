@@ -91,7 +91,19 @@ func mirrorGitHubCloudSourceRepositories(githubRepo *github.PushEventRepository)
 		return fmt.Errorf("Unable to clone the %s repo: %s", *githubRepo.CloneURL, err)
 	}
 
-	cmd := exec.Command("git", "clone", "--mirror", *githubRepo.CloneURL, dir)
+	githubRepoURL := *githubRepo.URL
+
+	githubToken := os.Getenv("GITHUB_TOKEN")
+	if githubToken != "" {
+		parsedURL, err := url.Parse(githubRepoURL)
+		if err != nil {
+			return err
+		}
+		parsedURL.User = url.UserPassword(githubToken, "x-oauth-basic")
+		githubRepoURL = parsedURL.String()
+	}
+
+	cmd := exec.Command("git", "clone", "--mirror", githubRepoURL, dir)
 	output, err := cmd.CombinedOutput()
 	log.Println(output)
 	if err != nil {
